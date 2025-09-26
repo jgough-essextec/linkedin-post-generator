@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse, JsonResponse
 from django.contrib import messages
-from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.csrf import csrf_protect, csrf_exempt
 from django.views.decorators.http import require_http_methods
 import logging
 import json
@@ -221,7 +221,7 @@ def status_view(request, post_id):
         }, status=500)
 
 
-@csrf_protect
+@csrf_exempt
 @require_http_methods(["POST"])
 def regenerate_single_image(request, post_id):
     """

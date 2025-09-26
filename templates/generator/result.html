@@ -3,11 +3,6 @@
 {% block title %}Generated LinkedIn Post - Link-to-LinkedIn{% endblock %}
 
 {% block content %}
-<!-- Hidden form for CSRF token -->
-<form style="display: none;">
-    {% csrf_token %}
-</form>
-
 <div class="row">
     <div class="col-12">
         <!-- Header with actions -->
@@ -405,8 +400,7 @@
         fetch(`/api/regenerate-image/{{ post.id }}/`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCookie('csrftoken')
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify(requestData)
         })
@@ -465,20 +459,5 @@
         });
     }
 
-    // Function to get CSRF token from cookies
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
-        }
-        return cookieValue;
-    }
 </script>
 {% endblock %}
