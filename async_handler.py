@@ -18,11 +18,13 @@ def process_images_async(event, context):
     Handle async image processing within the main Lambda
     """
     try:
-        logger.info(f"Processing async image generation: {event}")
+        logger.info(f"ASYNC HANDLER: Starting image processing with event: {event}")
 
         # Extract parameters
         post_id = event.get('post_id')
         summary_text = event.get('summary_text', '')
+
+        logger.info(f"ASYNC HANDLER: Extracted post_id={post_id}, summary_length={len(summary_text)}")
 
         if not post_id:
             raise ValueError("post_id is required")

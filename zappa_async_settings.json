@@ -1,0 +1,37 @@
+{
+    "dev": {
+        "lambda_handler": "async_lambda_handler.lambda_handler",
+        "aws_region": "us-east-1",
+        "profile_name": "default",
+        "project_name": "linkedin-generator-async",
+        "runtime": "python3.9",
+        "s3_bucket": "linkedin-generator-zappa-deployments",
+        "timeout_seconds": 300,
+        "memory_size": 1024,
+        "keep_warm": false,
+        "environment_variables": {
+            "DEBUG": "False",
+            "USE_S3": "True",
+            "USE_POSTGRES": "True",
+            "DB_NAME": "linkedin_generator",
+            "DB_USER": "linkedinapp",
+            "DB_PASSWORD": "LinkedInApp123!",
+            "DB_HOST": "linkedin-generator-db.c6rjotw1sfev.us-east-1.rds.amazonaws.com",
+            "DB_PORT": "5432",
+            "AWS_STORAGE_BUCKET_NAME": "linkedin-generator-images",
+            "AWS_DEFAULT_REGION": "us-east-1"
+        },
+        "exclude": [
+            "*.git*",
+            "*.DS_Store*",
+            "*.pyc",
+            "*.pyo",
+            "__pycache__",
+            "node_modules",
+            ".env",
+            "venv",
+            "*.sqlite3",
+            "staticfiles"
+        ]
+    }
+}

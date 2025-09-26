@@ -33,7 +33,7 @@ class AIGenerator:
 
         # Model configurations - using models that support on-demand throughput
         self.text_model_id = "anthropic.claude-3-5-sonnet-20240620-v1:0"  # This version supports on-demand
-        self.image_model_id = "amazon.titan-image-generator-v1"  # Use v1 (without :0) which supports on-demand
+        self.image_model_id = "stability.stable-diffusion-xl-v1:0"  # Switch to Stable Diffusion
 
     def generate_text_content(self, scraped_content, user_prompt_adjustment=""):
         """
@@ -150,21 +150,25 @@ class AIGenerator:
 
             for i in range(min(num_images, len(prompts))):
                 try:
-                    # Prepare the request for Titan Image Generator
+                    # Prepare the request for Stable Diffusion XL
                     request_body = {
-                        "textToImageParams": {
-                            "text": prompts[i],
-                            "negativeText": "blurry, low quality, distorted, unprofessional"
-                        },
-                        "taskType": "TEXT_IMAGE",
-                        "imageGenerationConfig": {
-                            "cfgScale": 7.0,
-                            "seed": 42 + i,  # Different seed for variety
-                            "width": 1024,
-                            "height": 1024,
-                            "numberOfImages": 1,
-                            "quality": "premium"
-                        }
+                        "text_prompts": [
+                            {
+                                "text": prompts[i],
+                                "weight": 1.0
+                            },
+                            {
+                                "text": "blurry, low quality, distorted, unprofessional, nsfw",
+                                "weight": -1.0
+                            }
+                        ],
+                        "cfg_scale": 7,
+                        "seed": 42 + i,  # Different seed for variety
+                        "steps": 30,
+                        "width": 1024,
+                        "height": 1024,
+                        "samples": 1,
+                        "style_preset": "photographic"
                     }
 
                     # Make the API call
@@ -173,13 +177,14 @@ class AIGenerator:
                         body=json.dumps(request_body)
                     )
 
-                    # Parse response
+                    # Parse response for Stable Diffusion
                     response_body = json.loads(response['body'].read())
 
-                    if 'images' in response_body and len(response_body['images']) > 0:
-                        # Extract base64 image data
-                        image_data = response_body['images'][0]
+                    if 'artifacts' in response_body and len(response_body['artifacts']) > 0:
+                        # Extract base64 image data from Stable Diffusion response
+                        image_data = response_body['artifacts'][0]['base64']
                         generated_images.append(image_data)
+                        logger.info(f"Successfully generated image {i+1} with Stable Diffusion")
                     else:
                         logger.warning(f"No image generated for prompt {i+1}")
 

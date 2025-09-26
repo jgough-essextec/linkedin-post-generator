@@ -14,12 +14,13 @@ def lambda_handler(event, context):
     """
     Main Lambda handler that routes to appropriate processing
     """
-    logger.info(f"Lambda handler called")
+    logger.info(f"Lambda handler called with event keys: {list(event.keys()) if isinstance(event, dict) else 'not dict'}")
 
     # Check if this is an async image processing request
+    # The event structure for direct Lambda invoke is different than API Gateway
     if isinstance(event, dict) and event.get('action') == 'process_images':
         # This is an async image processing request
-        logger.info("Handling async image processing request")
+        logger.info(f"MAIN HANDLER: Detected async image processing request: {event}")
 
         # Setup Django for async processing
         os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
