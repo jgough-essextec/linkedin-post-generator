@@ -366,12 +366,14 @@ class AIGenerator:
                 return {
                     'success': True,
                     'images': generated_images,  # Keep original list with None values for proper indexing
+                    'prompts': prompts,  # Include the generated prompts
                     'error': None
                 }
             else:
                 return {
                     'success': False,
                     'images': [],
+                    'prompts': prompts,  # Include prompts even if images failed
                     'error': 'Failed to generate any images'
                 }
 

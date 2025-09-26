@@ -24,6 +24,16 @@ class GeneratedPost(models.Model):
         null=True,
         help_text="Second generated image in S3"
     )
+    image_prompt_1 = models.TextField(
+        blank=True,
+        null=True,
+        help_text="AI-generated prompt used for first image"
+    )
+    image_prompt_2 = models.TextField(
+        blank=True,
+        null=True,
+        help_text="AI-generated prompt used for second image"
+    )
     markdown_content = models.TextField(help_text="Complete markdown output")
     images_processing = models.BooleanField(default=False, help_text="Whether images are currently being generated")
     images_completed_at = models.DateTimeField(null=True, blank=True, help_text="When image generation completed")

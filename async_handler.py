@@ -46,6 +46,12 @@ def process_images_async(event, context):
         image_result = ai_generator.generate_images(summary_text)
 
         image_urls = [None, None]
+        image_prompts = [None, None]
+
+        # Extract prompts from the result
+        if 'prompts' in image_result and image_result['prompts']:
+            image_prompts = image_result['prompts'][:2]  # Take first 2 prompts
+            logger.info(f"Generated prompts: {image_prompts}")
 
         if image_result['success'] and image_result['images']:
             # Upload images to S3
@@ -53,22 +59,25 @@ def process_images_async(event, context):
             storage_service = S3StorageService()
 
             for i, image_data in enumerate(image_result['images'][:2]):
-                try:
-                    upload_result = storage_service.upload_image(
-                        image_data,
-                        f"linkedin_post_{post_id}"
-                    )
-                    if upload_result['success']:
-                        image_urls[i] = upload_result['url']
-                        logger.info(f"Image {i+1} uploaded: {upload_result['url']}")
-                    else:
-                        logger.error(f"Failed to upload image {i+1}: {upload_result['error']}")
-                except Exception as e:
-                    logger.error(f"Error uploading image {i+1}: {str(e)}")
+                if image_data is not None:  # Only process non-None images
+                    try:
+                        upload_result = storage_service.upload_image(
+                            image_data,
+                            f"linkedin_post_{post_id}"
+                        )
+                        if upload_result['success']:
+                            image_urls[i] = upload_result['url']
+                            logger.info(f"Image {i+1} uploaded: {upload_result['url']}")
+                        else:
+                            logger.error(f"Failed to upload image {i+1}: {upload_result['error']}")
+                    except Exception as e:
+                        logger.error(f"Error uploading image {i+1}: {str(e)}")
 
         # Update post in database
         post.image_url_1 = image_urls[0]
         post.image_url_2 = image_urls[1]
+        post.image_prompt_1 = image_prompts[0] if len(image_prompts) > 0 else None
+        post.image_prompt_2 = image_prompts[1] if len(image_prompts) > 1 else None
         post.images_processing = False
         post.images_completed_at = timezone.now()
 
