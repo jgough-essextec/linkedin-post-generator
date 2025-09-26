@@ -278,6 +278,9 @@ class AIGenerator:
             dict: Generated image with 'success', 'image', 'prompt', and 'error' keys
         """
         try:
+            logger.info(f"Starting single image generation with {model_type}")
+            logger.info(f"Prompt text: {prompt_text[:100]}...")
+
             if model_type == 'nova':
                 # Nova Canvas request format
                 request_body = {
@@ -314,14 +317,27 @@ class AIGenerator:
                 }
                 model_id = self.image_model_titan
             else:
-                raise ValueError(f"Unsupported model type: {model_type}")
+                error_msg = f"Unsupported model type: {model_type}"
+                logger.error(error_msg)
+                return {
+                    'success': False,
+                    'image': None,
+                    'prompt': prompt_text,
+                    'error': error_msg
+                }
+
+            logger.info(f"Using model: {model_id}")
+            logger.info(f"Request body: {json.dumps(request_body, indent=2)}")
 
             response = self.bedrock_client.invoke_model(
                 modelId=model_id,
                 body=json.dumps(request_body)
             )
 
+            logger.info(f"Bedrock response status: {response.get('ResponseMetadata', {}).get('HTTPStatusCode', 'unknown')}")
+
             response_body = json.loads(response['body'].read())
+            logger.info(f"Response body keys: {list(response_body.keys())}")
 
             if 'images' in response_body and len(response_body['images']) > 0:
                 image_data = response_body['images'][0]
@@ -333,21 +349,23 @@ class AIGenerator:
                     'error': None
                 }
             else:
-                logger.warning(f"No image generated with {model_type}")
+                error_msg = f'No image generated with {model_type}. Response: {response_body}'
+                logger.warning(error_msg)
                 return {
                     'success': False,
                     'image': None,
                     'prompt': prompt_text,
-                    'error': f'No image generated with {model_type}'
+                    'error': error_msg
                 }
 
         except Exception as e:
-            logger.error(f"Error generating image with {model_type}: {str(e)}")
+            error_msg = f'Failed to generate image with {model_type}: {str(e)}'
+            logger.error(error_msg, exc_info=True)
             return {
                 'success': False,
                 'image': None,
                 'prompt': prompt_text,
-                'error': f'Failed to generate image with {model_type}: {str(e)}'
+                'error': error_msg
             }
 
     def generate_images(self, text_content, num_images=2):
