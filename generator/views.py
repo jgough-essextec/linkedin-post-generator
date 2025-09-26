@@ -185,6 +185,18 @@ def check_image_status(request, post_id):
 
 
 # API endpoint for checking generation status (optional)
+def history_view(request):
+    """
+    Display all previously generated posts in a table
+    """
+    posts = GeneratedPost.objects.all().order_by('-created_at')
+
+    context = {
+        'posts': posts
+    }
+    return render(request, 'generator/history.html', context)
+
+
 def status_view(request, post_id):
     """
     API endpoint to check generation status (for future async implementation)

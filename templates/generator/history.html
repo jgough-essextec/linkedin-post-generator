@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+
+{% block title %}Post History - Link-to-LinkedIn{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="mb-1">Post History</h2>
+                <p class="text-muted mb-0">All your previously generated LinkedIn posts</p>
+            </div>
+            <div>
+                <a href="{% url 'generator:index' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Generate New Post
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="bi bi-clock-history"></i> Generated Posts ({{ posts.count }})
+                </h4>
+            </div>
+            <div class="card-body">
+                {% if posts %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 40%;">Source URL</th>
+                                <th style="width: 45%;">Summary</th>
+                                <th style="width: 10%;">Created</th>
+                                <th style="width: 5%;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for post in posts %}
+                            <tr>
+                                <td>
+                                    <a href="{{ post.source_url }}" target="_blank" class="text-decoration-none">
+                                        {{ post.source_url|truncatechars:60 }}
+                                        <i class="bi bi-box-arrow-up-right ms-1 small"></i>
+                                    </a>
+                                </td>
+                                <td>
+                                    <span class="text-muted">{{ post.summary|truncatechars:120 }}</span>
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        {{ post.created_at|date:"M d, Y" }}<br>
+                                        {{ post.created_at|time:"H:i" }}
+                                    </small>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'generator:result' post.id %}"
+                                           class="btn btn-sm btn-outline-primary"
+                                           title="View Post">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="{% url 'generator:download_markdown' post.id %}"
+                                           class="btn btn-sm btn-outline-success"
+                                           title="Download Markdown">
+                                            <i class="bi bi-download"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <!-- Empty state -->
+                <div class="text-center py-5">
+                    <i class="bi bi-file-earmark-text display-1 text-muted"></i>
+                    <h4 class="mt-3">No posts generated yet</h4>
+                    <p class="text-muted">Start by generating your first LinkedIn post from an article URL.</p>
+                    <a href="{% url 'generator:index' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> Generate Your First Post
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if posts %}
+<!-- Statistics Card -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card bg-light">
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <div class="h3 mb-0">{{ posts.count }}</div>
+                        <small class="text-muted">Total Posts Generated</small>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="h3 mb-0">{{ posts|length|add:posts.count }}</div>
+                        <small class="text-muted">Articles Processed</small>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="h3 mb-0">
+                            {% with posts.first as latest %}
+                                {% if latest %}{{ latest.created_at|timesince }} ago{% else %}N/A{% endif %}
+                            {% endwith %}
+                        </div>
+                        <small class="text-muted">Last Generated</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
