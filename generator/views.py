@@ -219,3 +219,111 @@ def status_view(request, post_id):
             'status': 'error',
             'error': str(e)
         }, status=500)
+
+
+@require_http_methods(["POST"])
+def regenerate_single_image(request, post_id):
+    """
+    API endpoint to regenerate a single image with custom prompt
+    """
+    try:
+        # Parse JSON request body
+        data = json.loads(request.body)
+        prompt_text = data.get('prompt_text', '').strip()
+        model_type = data.get('model_type', 'nova')  # 'nova' or 'titan'
+        image_number = int(data.get('image_number', 1))  # 1 or 2
+
+        if not prompt_text:
+            return JsonResponse({
+                'success': False,
+                'error': 'Prompt text is required'
+            }, status=400)
+
+        if model_type not in ['nova', 'titan']:
+            return JsonResponse({
+                'success': False,
+                'error': 'Invalid model type. Must be "nova" or "titan"'
+            }, status=400)
+
+        if image_number not in [1, 2]:
+            return JsonResponse({
+                'success': False,
+                'error': 'Invalid image number. Must be 1 or 2'
+            }, status=400)
+
+        # Get the post
+        post = get_object_or_404(GeneratedPost, id=post_id)
+
+        # Generate single image
+        ai_generator = AIGenerator()
+        image_result = ai_generator.generate_single_image(prompt_text, model_type)
+
+        if image_result['success'] and image_result['image']:
+            # Upload new image to S3
+            storage_service = S3StorageService()
+            upload_result = storage_service.upload_image(
+                image_result['image'],
+                f"linkedin_post_{post_id}_regenerated_{image_number}"
+            )
+
+            if upload_result['success']:
+                # Update the corresponding image URL and prompt in the database
+                if image_number == 1:
+                    post.image_url_1 = upload_result['url']
+                    post.image_prompt_1 = prompt_text
+                else:
+                    post.image_url_2 = upload_result['url']
+                    post.image_prompt_2 = prompt_text
+
+                # Update markdown content with new image URLs
+                image_urls = []
+                if post.image_url_1:
+                    image_urls.append(post.image_url_1)
+                if post.image_url_2:
+                    image_urls.append(post.image_url_2)
+
+                if image_urls:
+                    post.markdown_content = ai_generator.create_markdown_content(
+                        {
+                            'linkedin_post': post.linkedin_post,
+                            'summary': post.summary,
+                            'business_rationale': post.business_rationale
+                        },
+                        image_urls
+                    )
+
+                post.save()
+
+                logger.info(f"Successfully regenerated image {image_number} for post {post_id} using {model_type}")
+
+                return JsonResponse({
+                    'success': True,
+                    'image_url': upload_result['url'],
+                    'prompt': prompt_text,
+                    'model_type': model_type,
+                    'image_number': image_number
+                })
+            else:
+                logger.error(f"Failed to upload regenerated image: {upload_result['error']}")
+                return JsonResponse({
+                    'success': False,
+                    'error': f'Failed to upload image: {upload_result["error"]}'
+                }, status=500)
+        else:
+            logger.error(f"Failed to generate image: {image_result['error']}")
+            return JsonResponse({
+                'success': False,
+                'error': f'Failed to generate image: {image_result["error"]}'
+            }, status=500)
+
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Invalid JSON data'
+        }, status=400)
+    except Exception as e:
+        logger.error(f"Error in regenerate_single_image: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': f'Server error: {str(e)}'
+        }, status=500)

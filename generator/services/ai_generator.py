@@ -266,6 +266,90 @@ class AIGenerator:
         logger.info("Using default professional prompts")
         return default_prompts
 
+    def generate_single_image(self, prompt_text, model_type='nova'):
+        """
+        Generate a single image using specified model and prompt
+
+        Args:
+            prompt_text (str): The prompt to use for image generation
+            model_type (str): 'nova' for Nova Canvas or 'titan' for Titan Image Generator
+
+        Returns:
+            dict: Generated image with 'success', 'image', 'prompt', and 'error' keys
+        """
+        try:
+            if model_type == 'nova':
+                # Nova Canvas request format
+                request_body = {
+                    "taskType": "TEXT_IMAGE",
+                    "textToImageParams": {
+                        "text": prompt_text
+                    },
+                    "imageGenerationConfig": {
+                        "numberOfImages": 1,
+                        "quality": "standard",
+                        "height": 1024,
+                        "width": 1024,
+                        "cfgScale": 8.0,
+                        "seed": 42
+                    }
+                }
+                model_id = self.image_model_nova
+
+            elif model_type == 'titan':
+                # Titan G1 v2 request format
+                request_body = {
+                    "taskType": "TEXT_IMAGE",
+                    "textToImageParams": {
+                        "text": prompt_text,
+                        "negativeText": "blurry, low quality, distorted, unprofessional, nsfw"
+                    },
+                    "imageGenerationConfig": {
+                        "numberOfImages": 1,
+                        "height": 1024,
+                        "width": 1024,
+                        "cfgScale": 7.5,
+                        "seed": 43
+                    }
+                }
+                model_id = self.image_model_titan
+            else:
+                raise ValueError(f"Unsupported model type: {model_type}")
+
+            response = self.bedrock_client.invoke_model(
+                modelId=model_id,
+                body=json.dumps(request_body)
+            )
+
+            response_body = json.loads(response['body'].read())
+
+            if 'images' in response_body and len(response_body['images']) > 0:
+                image_data = response_body['images'][0]
+                logger.info(f"Successfully generated image with {model_type}")
+                return {
+                    'success': True,
+                    'image': image_data,
+                    'prompt': prompt_text,
+                    'error': None
+                }
+            else:
+                logger.warning(f"No image generated with {model_type}")
+                return {
+                    'success': False,
+                    'image': None,
+                    'prompt': prompt_text,
+                    'error': f'No image generated with {model_type}'
+                }
+
+        except Exception as e:
+            logger.error(f"Error generating image with {model_type}: {str(e)}")
+            return {
+                'success': False,
+                'image': None,
+                'prompt': prompt_text,
+                'error': f'Failed to generate image with {model_type}: {str(e)}'
+            }
+
     def generate_images(self, text_content, num_images=2):
         """
         Generate context-aware images using Nova Canvas and Titan Image Generator G1 v2

@@ -95,22 +95,44 @@
             <div class="card-body">
                 {% if post.image_prompt_1 %}
                 <div class="mb-3">
-                    <h6 class="text-primary mb-2">
-                        <i class="bi bi-1-circle"></i> Nova Canvas Prompt:
-                    </h6>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="text-primary mb-0">
+                            <i class="bi bi-1-circle"></i> Nova Canvas Prompt:
+                        </h6>
+                        <button class="btn btn-sm btn-outline-primary" onclick="regenerateImage(1, 'nova')" id="regenerate-btn-1">
+                            <i class="bi bi-arrow-clockwise"></i> Regenerate
+                        </button>
+                    </div>
                     <div class="bg-light p-3 rounded border-start border-primary border-3">
-                        <small class="text-dark">{{ post.image_prompt_1 }}</small>
+                        <textarea
+                            class="form-control border-0 bg-transparent resize-none"
+                            id="prompt-1"
+                            rows="3"
+                            style="font-size: 0.875rem; line-height: 1.4; resize: none; box-shadow: none;"
+                            placeholder="Edit the image prompt and click Regenerate to create a new image..."
+                        >{{ post.image_prompt_1 }}</textarea>
                     </div>
                 </div>
                 {% endif %}
 
                 {% if post.image_prompt_2 %}
                 <div class="mb-0">
-                    <h6 class="text-success mb-2">
-                        <i class="bi bi-2-circle"></i> Titan Generator Prompt:
-                    </h6>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="text-success mb-0">
+                            <i class="bi bi-2-circle"></i> Titan Generator Prompt:
+                        </h6>
+                        <button class="btn btn-sm btn-outline-success" onclick="regenerateImage(2, 'titan')" id="regenerate-btn-2">
+                            <i class="bi bi-arrow-clockwise"></i> Regenerate
+                        </button>
+                    </div>
                     <div class="bg-light p-3 rounded border-start border-success border-3">
-                        <small class="text-dark">{{ post.image_prompt_2 }}</small>
+                        <textarea
+                            class="form-control border-0 bg-transparent resize-none"
+                            id="prompt-2"
+                            rows="3"
+                            style="font-size: 0.875rem; line-height: 1.4; resize: none; box-shadow: none;"
+                            placeholder="Edit the image prompt and click Regenerate to create a new image..."
+                        >{{ post.image_prompt_2 }}</textarea>
                     </div>
                 </div>
                 {% endif %}
@@ -349,6 +371,101 @@
 
         // Start polling after 15 seconds (give images time to start processing)
         setTimeout(pollStatus, 15000);
+    }
+
+    // Function to regenerate a single image
+    function regenerateImage(imageNumber, modelType) {
+        const promptElement = document.getElementById(`prompt-${imageNumber}`);
+        const buttonElement = document.getElementById(`regenerate-btn-${imageNumber}`);
+        const promptText = promptElement.value.trim();
+
+        if (!promptText) {
+            alert('Please enter a prompt before regenerating the image.');
+            return;
+        }
+
+        // Show loading state
+        const originalButtonHTML = buttonElement.innerHTML;
+        buttonElement.innerHTML = '<i class="bi bi-hourglass-split"></i> Generating...';
+        buttonElement.disabled = true;
+
+        // Prepare request data
+        const requestData = {
+            prompt_text: promptText,
+            model_type: modelType,
+            image_number: imageNumber
+        };
+
+        // Make AJAX request
+        fetch(`/api/regenerate-image/{{ post.id }}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify(requestData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update the image on the page
+                const imageElement = document.querySelector(`img[alt="Generated Image ${imageNumber}"]`);
+                if (imageElement) {
+                    imageElement.src = data.image_url + '?t=' + new Date().getTime(); // Cache bust
+                }
+
+                // Update download link
+                const downloadLink = imageElement.closest('.card').querySelector('a[download]');
+                if (downloadLink) {
+                    downloadLink.href = data.image_url;
+                }
+
+                // Show success feedback
+                buttonElement.innerHTML = '<i class="bi bi-check-circle"></i> Regenerated!';
+                buttonElement.classList.remove('btn-outline-primary', 'btn-outline-success');
+                buttonElement.classList.add('btn-success');
+
+                // Reset button after 3 seconds
+                setTimeout(() => {
+                    buttonElement.innerHTML = originalButtonHTML;
+                    buttonElement.classList.remove('btn-success');
+                    buttonElement.classList.add(modelType === 'nova' ? 'btn-outline-primary' : 'btn-outline-success');
+                    buttonElement.disabled = false;
+                }, 3000);
+
+            } else {
+                console.error('Failed to regenerate image:', data.error);
+                alert('Failed to regenerate image: ' + data.error);
+
+                // Reset button
+                buttonElement.innerHTML = originalButtonHTML;
+                buttonElement.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Error regenerating image:', error);
+            alert('Error regenerating image. Please try again.');
+
+            // Reset button
+            buttonElement.innerHTML = originalButtonHTML;
+            buttonElement.disabled = false;
+        });
+    }
+
+    // Function to get CSRF token from cookies
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
     }
 </script>
 {% endblock %}

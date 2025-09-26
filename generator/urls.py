@@ -10,4 +10,5 @@ urlpatterns = [
     path('history/', views.history_view, name='history'),
     path('download/markdown/<int:post_id>/', views.download_markdown_view, name='download_markdown'),
     path('api/image-status/<int:post_id>/', views.check_image_status, name='check_image_status'),
+    path('api/regenerate-image/<int:post_id>/', views.regenerate_single_image, name='regenerate_single_image'),
 ]
