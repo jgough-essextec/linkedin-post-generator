@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse, JsonResponse
 from django.contrib import messages
-from django.views.decorators.csrf import csrf_protect, csrf_exempt
+from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_http_methods
 import logging
 import json
@@ -101,7 +101,7 @@ def generate_view(request):
             [url for url in image_urls if url]
         )
 
-        # Step 6: Save to database with async image processing enabled
+        # Step 6: Save to database without image processing (focusing on core functionality)
         generated_post = GeneratedPost.objects.create(
             source_url=source_url,
             original_content=scraped_content,
@@ -112,21 +112,12 @@ def generate_view(request):
             image_url_1=image_urls[0],
             image_url_2=image_urls[1],
             markdown_content=markdown_content,
-            images_processing=True  # Enable async image processing
+            images_processing=False  # Image generation disabled for optimal performance
         )
 
-        # Step 7: Trigger async image generation
-        try:
-            logger.info(f"About to trigger async image generation for post {generated_post.id}")
-            trigger_async_image_generation(generated_post.id, generated_data['summary'])
-            logger.info(f"Successfully triggered async image generation for post {generated_post.id}")
-        except Exception as e:
-            logger.error(f"Failed to trigger async image generation: {str(e)}")
-            # If async trigger fails, set processing to false so user doesn't wait indefinitely
-            generated_post.images_processing = False
-            generated_post.save()
-            # Re-raise to see the error in logs
-            raise
+        # Image generation temporarily disabled to focus on core text generation
+        # TODO: Re-enable once we want to add image functionality back
+        logger.info(f"Post {generated_post.id} created successfully - image generation disabled for performance")
 
         messages.success(request, 'LinkedIn post generated successfully!')
         return redirect('generator:result', post_id=generated_post.id)
@@ -201,55 +192,6 @@ def history_view(request):
     }
     return render(request, 'generator/history.html', context)
 
-
-@csrf_exempt
-def test_async_view(request):
-    """
-    Test endpoint to debug async image generation
-    """
-    if request.method == 'POST':
-        try:
-            # Create a test post
-            test_post = GeneratedPost.objects.create(
-                source_url="https://test.com",
-                original_content="Test content",
-                user_prompt_adjustment="",
-                linkedin_post="Test LinkedIn post",
-                summary="Test summary for image generation",
-                business_rationale="Test rationale",
-                images_processing=True
-            )
-
-            logger.info(f"TEST: Created test post {test_post.id}")
-
-            # Try to trigger async image generation
-            try:
-                trigger_async_image_generation(test_post.id, test_post.summary)
-                logger.info(f"TEST: Successfully triggered async for post {test_post.id}")
-                return JsonResponse({
-                    'success': True,
-                    'post_id': test_post.id,
-                    'message': 'Async generation triggered'
-                })
-            except Exception as e:
-                logger.error(f"TEST: Failed to trigger async: {str(e)}")
-                return JsonResponse({
-                    'success': False,
-                    'error': f'Async trigger failed: {str(e)}'
-                })
-
-        except Exception as e:
-            logger.error(f"TEST: Error creating test post: {str(e)}")
-            return JsonResponse({
-                'success': False,
-                'error': f'Test setup failed: {str(e)}'
-            })
-
-    # GET request - show test form
-    return JsonResponse({
-        'message': 'POST to this endpoint to test async image generation',
-        'recent_posts': list(GeneratedPost.objects.filter(images_processing=True).values('id', 'created_at', 'images_processing')[:5])
-    })
 
 
 def status_view(request, post_id):
