@@ -33,7 +33,8 @@ class AIGenerator:
 
         # Model configurations - using models that support on-demand throughput
         self.text_model_id = "anthropic.claude-3-5-sonnet-20240620-v1:0"  # This version supports on-demand
-        self.image_model_nova = "amazon.nova-canvas-v1:0"  # Nova Canvas for image 1
+        # Note: Nova Canvas might not be available - using Titan as fallback
+        self.image_model_nova = "amazon.titan-image-generator-v2:0"  # Using Titan for both for now
         self.image_model_titan = "amazon.titan-image-generator-v2:0"  # Titan G1 v2 for image 2
 
     def generate_text_content(self, scraped_content, user_prompt_adjustment=""):
@@ -282,15 +283,15 @@ class AIGenerator:
             logger.info(f"Prompt text: {prompt_text[:100]}...")
 
             if model_type == 'nova':
-                # Nova Canvas request format
+                # Using Titan for Nova model type (same format as Titan)
                 request_body = {
                     "taskType": "TEXT_IMAGE",
                     "textToImageParams": {
-                        "text": prompt_text
+                        "text": prompt_text,
+                        "negativeText": "blurry, low quality, distorted, unprofessional, nsfw"
                     },
                     "imageGenerationConfig": {
                         "numberOfImages": 1,
-                        "quality": "standard",
                         "height": 1024,
                         "width": 1024,
                         "cfgScale": 8.0,
