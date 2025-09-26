@@ -397,9 +397,14 @@
         };
 
         // Make AJAX request
-        console.log('Making request to:', `/dev/api/regenerate-image/{{ post.id }}/`);
+        // Detect environment from current URL to use correct API path
+        const isProduction = window.location.href.includes('/production/');
+        const apiPath = isProduction ? '/production' : '/dev';
+        const apiUrl = `${apiPath}/api/regenerate-image/{{ post.id }}/`;
+
+        console.log('Making request to:', apiUrl);
         console.log('Request data:', requestData);
-        fetch(`/dev/api/regenerate-image/{{ post.id }}/`, {
+        fetch(apiUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

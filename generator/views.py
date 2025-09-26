@@ -27,9 +27,14 @@ def trigger_async_image_generation(post_id, summary_text):
             'summary_text': summary_text
         }
 
+        # Determine async Lambda function name based on environment
+        import os
+        debug_mode = os.getenv('DEBUG', 'True').lower() == 'true'
+        async_function_name = 'linkedin-generator-async-dev' if debug_mode else 'linkedin-generator-async-production'
+
         # Invoke async image processing (dedicated async Lambda)
         response = lambda_client.invoke(
-            FunctionName='linkedin-generator-async-dev',
+            FunctionName=async_function_name,
             InvocationType='Event',  # Async invocation
             Payload=json.dumps(payload)  # No need for 'action' field anymore
         )
