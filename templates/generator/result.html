@@ -397,6 +397,8 @@
         };
 
         // Make AJAX request
+        console.log('Making request to:', `/api/regenerate-image/{{ post.id }}/`);
+        console.log('Request data:', requestData);
         fetch(`/api/regenerate-image/{{ post.id }}/`, {
             method: 'POST',
             headers: {

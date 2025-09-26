@@ -222,14 +222,22 @@ def status_view(request, post_id):
 
 
 @csrf_exempt
-@require_http_methods(["POST"])
 def regenerate_single_image(request, post_id):
     """
     API endpoint to regenerate a single image with custom prompt
     """
     try:
         logger.info(f"Regenerate image request for post {post_id}")
+        logger.info(f"Request method: {request.method}")
+        logger.info(f"Request headers: {dict(request.headers)}")
         logger.info(f"Request body: {request.body}")
+
+        # Check request method
+        if request.method != 'POST':
+            return JsonResponse({
+                'success': False,
+                'error': f'Method {request.method} not allowed. Use POST.'
+            }, status=405)
 
         # Parse JSON request body
         data = json.loads(request.body)
