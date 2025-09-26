@@ -13,18 +13,26 @@ class S3StorageService:
     """Service for uploading files to AWS S3"""
 
     def __init__(self):
-        # Configure boto3 client - use IAM role credentials if explicit credentials not provided
+        # Configure boto3 client - prefer IAM role credentials in Lambda environment
+        import os
+
         client_kwargs = {
             'region_name': getattr(settings, 'AWS_S3_REGION_NAME', 'us-east-1'),
         }
 
-        # Only add explicit credentials if they're set, otherwise use default credential chain (IAM role)
-        access_key = getattr(settings, 'AWS_ACCESS_KEY_ID', None)
-        secret_key = getattr(settings, 'AWS_SECRET_ACCESS_KEY', None)
+        # Check if we're running in Lambda environment
+        if 'AWS_LAMBDA_FUNCTION_NAME' in os.environ:
+            # In Lambda, use IAM role credentials (default credential chain)
+            logger.info("Using IAM role credentials for S3 in Lambda environment")
+        else:
+            # Local development - use explicit credentials if available
+            access_key = getattr(settings, 'AWS_ACCESS_KEY_ID', None)
+            secret_key = getattr(settings, 'AWS_SECRET_ACCESS_KEY', None)
 
-        if access_key and secret_key:
-            client_kwargs['aws_access_key_id'] = access_key
-            client_kwargs['aws_secret_access_key'] = secret_key
+            if access_key and secret_key:
+                client_kwargs['aws_access_key_id'] = access_key
+                client_kwargs['aws_secret_access_key'] = secret_key
+                logger.info("Using explicit credentials for S3 in local environment")
 
         self.s3_client = boto3.client('s3', **client_kwargs)
         self.bucket_name = getattr(settings, 'AWS_STORAGE_BUCKET_NAME', 'linkedin-generator-images')
@@ -66,13 +74,13 @@ class S3StorageService:
             }
             content_type = content_type_map.get(file_extension.lower(), 'image/png')
 
-            # Upload to S3
+            # Upload to S3 (remove ACL since bucket doesn't allow ACLs)
             self.s3_client.put_object(
                 Bucket=self.bucket_name,
                 Key=filename,
                 Body=image_bytes,
-                ContentType=content_type,
-                ACL='public-read'  # Make the image publicly accessible
+                ContentType=content_type
+                # Note: Public access is managed via bucket policy instead of ACL
             )
 
             # Generate public URL

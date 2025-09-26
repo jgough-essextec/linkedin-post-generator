@@ -33,7 +33,8 @@ class AIGenerator:
 
         # Model configurations - using models that support on-demand throughput
         self.text_model_id = "anthropic.claude-3-5-sonnet-20240620-v1:0"  # This version supports on-demand
-        self.image_model_id = "stability.stable-diffusion-xl-v1:0"  # Switch to Stable Diffusion
+        self.image_model_nova = "amazon.nova-canvas-v1:0"  # Nova Canvas for image 1
+        self.image_model_titan = "amazon.titan-image-generator-v2:0"  # Titan G1 v2 for image 2
 
     def generate_text_content(self, scraped_content, user_prompt_adjustment=""):
         """
@@ -130,7 +131,7 @@ class AIGenerator:
 
     def generate_images(self, text_content, num_images=2):
         """
-        Generate images based on text content using Titan Image Generator
+        Generate images using Nova Canvas and Titan Image Generator G1 v2
 
         Args:
             text_content (str): Text to base images on (summary or rationale)
@@ -148,54 +149,89 @@ class AIGenerator:
                 "Abstract professional graphic showing innovation and growth. Minimalist business aesthetic with geometric shapes."
             ]
 
-            for i in range(min(num_images, len(prompts))):
+            # Generate Image 1 with Nova Canvas
+            if num_images >= 1:
                 try:
-                    # Prepare the request for Stable Diffusion XL
-                    request_body = {
-                        "text_prompts": [
-                            {
-                                "text": prompts[i],
-                                "weight": 1.0
-                            },
-                            {
-                                "text": "blurry, low quality, distorted, unprofessional, nsfw",
-                                "weight": -1.0
-                            }
-                        ],
-                        "cfg_scale": 7,
-                        "seed": 42 + i,  # Different seed for variety
-                        "steps": 30,
-                        "width": 1024,
-                        "height": 1024,
-                        "samples": 1,
-                        "style_preset": "photographic"
+                    # Nova Canvas request format
+                    nova_request = {
+                        "taskType": "TEXT_IMAGE",
+                        "textToImageParams": {
+                            "text": prompts[0]
+                        },
+                        "imageGenerationConfig": {
+                            "numberOfImages": 1,
+                            "quality": "standard",
+                            "height": 1024,
+                            "width": 1024,
+                            "cfgScale": 8.0,
+                            "seed": 42
+                        }
                     }
 
-                    # Make the API call
                     response = self.bedrock_client.invoke_model(
-                        modelId=self.image_model_id,
-                        body=json.dumps(request_body)
+                        modelId=self.image_model_nova,
+                        body=json.dumps(nova_request)
                     )
 
-                    # Parse response for Stable Diffusion
                     response_body = json.loads(response['body'].read())
 
-                    if 'artifacts' in response_body and len(response_body['artifacts']) > 0:
-                        # Extract base64 image data from Stable Diffusion response
-                        image_data = response_body['artifacts'][0]['base64']
+                    if 'images' in response_body and len(response_body['images']) > 0:
+                        image_data = response_body['images'][0]
                         generated_images.append(image_data)
-                        logger.info(f"Successfully generated image {i+1} with Stable Diffusion")
+                        logger.info("Successfully generated image 1 with Nova Canvas")
                     else:
-                        logger.warning(f"No image generated for prompt {i+1}")
+                        logger.warning("No image generated with Nova Canvas")
+                        generated_images.append(None)
 
                 except Exception as e:
-                    logger.error(f"Error generating image {i+1}: {str(e)}")
-                    continue
+                    logger.error(f"Error generating image with Nova Canvas: {str(e)}")
+                    generated_images.append(None)
 
-            if generated_images:
+            # Generate Image 2 with Titan G1 v2
+            if num_images >= 2:
+                try:
+                    # Titan G1 v2 request format
+                    titan_request = {
+                        "taskType": "TEXT_IMAGE",
+                        "textToImageParams": {
+                            "text": prompts[1],
+                            "negativeText": "blurry, low quality, distorted, unprofessional, nsfw"
+                        },
+                        "imageGenerationConfig": {
+                            "numberOfImages": 1,
+                            "height": 1024,
+                            "width": 1024,
+                            "cfgScale": 7.5,
+                            "seed": 43
+                        }
+                    }
+
+                    response = self.bedrock_client.invoke_model(
+                        modelId=self.image_model_titan,
+                        body=json.dumps(titan_request)
+                    )
+
+                    response_body = json.loads(response['body'].read())
+
+                    if 'images' in response_body and len(response_body['images']) > 0:
+                        image_data = response_body['images'][0]
+                        generated_images.append(image_data)
+                        logger.info("Successfully generated image 2 with Titan Image Generator G1 v2")
+                    else:
+                        logger.warning("No image generated with Titan G1 v2")
+                        generated_images.append(None)
+
+                except Exception as e:
+                    logger.error(f"Error generating image with Titan G1 v2: {str(e)}")
+                    generated_images.append(None)
+
+            # Filter out None values and check if we have any successful images
+            valid_images = [img for img in generated_images if img is not None]
+
+            if valid_images:
                 return {
                     'success': True,
-                    'images': generated_images,
+                    'images': generated_images,  # Keep original list with None values for proper indexing
                     'error': None
                 }
             else:

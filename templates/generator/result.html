@@ -95,22 +95,16 @@
                 </h4>
             </div>
             <div class="card-body">
-                <!-- Image generation currently disabled for optimal performance -->
+                <!-- Progress indicator for async image processing -->
                 {% if post.images_processing %}
                 <div id="image-processing-indicator" class="text-center mb-4">
                     <div class="spinner-border text-primary" role="status">
                         <span class="visually-hidden">Loading...</span>
                     </div>
-                    <p class="mt-2 text-muted">🎨 Generating AI images... This may take up to 2 minutes.</p>
+                    <p class="mt-2 text-muted">🎨 Generating AI images with Nova Canvas and Titan Image Generator... This may take up to 2 minutes.</p>
                     <div class="progress mt-2" style="height: 6px;">
                         <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%"></div>
                     </div>
-                </div>
-                {% else %}
-                <!-- Images disabled for now -->
-                <div class="text-center text-muted py-3">
-                    <i class="bi bi-image me-2"></i>
-                    <small>AI image generation temporarily disabled - focusing on lightning-fast text generation</small>
                 </div>
                 {% endif %}
 

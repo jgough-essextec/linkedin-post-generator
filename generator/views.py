@@ -101,7 +101,7 @@ def generate_view(request):
             [url for url in image_urls if url]
         )
 
-        # Step 6: Save to database without image processing (focusing on core functionality)
+        # Step 6: Save to database with async image processing enabled
         generated_post = GeneratedPost.objects.create(
             source_url=source_url,
             original_content=scraped_content,
@@ -112,12 +112,19 @@ def generate_view(request):
             image_url_1=image_urls[0],
             image_url_2=image_urls[1],
             markdown_content=markdown_content,
-            images_processing=False  # Image generation disabled for optimal performance
+            images_processing=True  # Re-enable async image processing
         )
 
-        # Image generation temporarily disabled to focus on core text generation
-        # TODO: Re-enable once we want to add image functionality back
-        logger.info(f"Post {generated_post.id} created successfully - image generation disabled for performance")
+        # Step 7: Trigger async image generation
+        try:
+            logger.info(f"About to trigger async image generation for post {generated_post.id}")
+            trigger_async_image_generation(generated_post.id, generated_data['summary'])
+            logger.info(f"Successfully triggered async image generation for post {generated_post.id}")
+        except Exception as e:
+            logger.error(f"Failed to trigger async image generation: {str(e)}")
+            # If async trigger fails, set processing to false so user doesn't wait indefinitely
+            generated_post.images_processing = False
+            generated_post.save()
 
         messages.success(request, 'LinkedIn post generated successfully!')
         return redirect('generator:result', post_id=generated_post.id)
