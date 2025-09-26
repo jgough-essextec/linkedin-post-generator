@@ -51,7 +51,14 @@
         "environment_variables": {
             "DEBUG": "False",
             "USE_S3": "True",
-            "USE_POSTGRES": "True"
+            "USE_POSTGRES": "True",
+            "DB_NAME": "linkedin_generator",
+            "DB_USER": "linkedinapp",
+            "DB_PASSWORD": "LinkedInApp123!",
+            "DB_HOST": "linkedin-generator-db.c6rjotw1sfev.us-east-1.rds.amazonaws.com",
+            "DB_PORT": "5432",
+            "AWS_STORAGE_BUCKET_NAME": "linkedin-generator-images",
+            "AWS_DEFAULT_REGION": "us-east-1"
         },
         "exclude": [
             "*.git*",
