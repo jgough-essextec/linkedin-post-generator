@@ -221,17 +221,23 @@ def status_view(request, post_id):
         }, status=500)
 
 
+@csrf_protect
 @require_http_methods(["POST"])
 def regenerate_single_image(request, post_id):
     """
     API endpoint to regenerate a single image with custom prompt
     """
     try:
+        logger.info(f"Regenerate image request for post {post_id}")
+        logger.info(f"Request body: {request.body}")
+
         # Parse JSON request body
         data = json.loads(request.body)
         prompt_text = data.get('prompt_text', '').strip()
         model_type = data.get('model_type', 'nova')  # 'nova' or 'titan'
         image_number = int(data.get('image_number', 1))  # 1 or 2
+
+        logger.info(f"Parsed data - prompt: {prompt_text[:50]}..., model: {model_type}, number: {image_number}")
 
         if not prompt_text:
             return JsonResponse({

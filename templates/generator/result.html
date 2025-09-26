@@ -3,6 +3,11 @@
 {% block title %}Generated LinkedIn Post - Link-to-LinkedIn{% endblock %}
 
 {% block content %}
+<!-- Hidden form for CSRF token -->
+<form style="display: none;">
+    {% csrf_token %}
+</form>
+
 <div class="row">
     <div class="col-12">
         <!-- Header with actions -->
@@ -405,8 +410,15 @@
             },
             body: JSON.stringify(requestData)
         })
-        .then(response => response.json())
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
+            console.log('Response data:', data);
             if (data.success) {
                 // Update the image on the page
                 const imageElement = document.querySelector(`img[alt="Generated Image ${imageNumber}"]`);
@@ -434,8 +446,9 @@
                 }, 3000);
 
             } else {
-                console.error('Failed to regenerate image:', data.error);
-                alert('Failed to regenerate image: ' + data.error);
+                const errorMsg = data.error || 'Unknown error occurred';
+                console.error('Failed to regenerate image:', errorMsg);
+                alert('Failed to regenerate image: ' + errorMsg);
 
                 // Reset button
                 buttonElement.innerHTML = originalButtonHTML;
@@ -444,7 +457,7 @@
         })
         .catch(error => {
             console.error('Error regenerating image:', error);
-            alert('Error regenerating image. Please try again.');
+            alert('Error regenerating image: ' + (error.message || error));
 
             // Reset button
             buttonElement.innerHTML = originalButtonHTML;
