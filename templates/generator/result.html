@@ -145,17 +145,6 @@
 
                 <!-- Image display area -->
                 <div id="images-container" class="row" {% if post.images_processing %}style="display: none;"{% endif %}>
-                    {% if post.image_url_1 or post.image_url_2 %}
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h4 class="card-title mb-0">
-                    <i class="bi bi-image"></i> Generated Images
-                </h4>
-            </div>
-            <div class="card-body">
-                <div class="row">
                     {% if post.image_url_1 %}
                     <div class="col-md-6 mb-3">
                         <div class="card">
@@ -181,7 +170,6 @@
                         </div>
                     </div>
                     {% endif %}
-                </div>
 
                     {% if not post.image_url_1 and not post.image_url_2 and not post.images_processing %}
                     <div class="text-center text-muted">
@@ -189,7 +177,6 @@
                         No images were generated for this post.
                     </div>
                     {% endif %}
-                {% endif %}
             </div>
         </div>
     </div>
