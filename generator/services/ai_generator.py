@@ -129,9 +129,146 @@ class AIGenerator:
                 'error': f'Failed to generate content: {str(e)}'
             }
 
+    def _create_context_aware_prompts(self, text_content):
+        """
+        Create dynamic image prompts based on article content using AI analysis
+
+        Args:
+            text_content (str): The article summary or content to analyze
+
+        Returns:
+            list: Two context-aware image prompts
+        """
+        try:
+            # Use Claude to analyze content and generate appropriate image prompts
+            prompt_generation_request = f"""
+            Based on this article content: "{text_content}"
+
+            Create 2 distinct, professional image prompts for LinkedIn posts. Each prompt should:
+            1. Be relevant to the article's main theme and topic
+            2. Be professional and business-appropriate
+            3. Avoid text, logos, or specific people
+            4. Use descriptive visual elements that represent the concept
+            5. Be suitable for social media sharing
+
+            Respond with exactly 2 prompts in this JSON format:
+            {{
+                "prompt1": "First image prompt here",
+                "prompt2": "Second image prompt here"
+            }}
+
+            Make the prompts visually distinct but thematically related to the content.
+            """
+
+            # Generate prompts using Claude
+            request_body = {
+                "anthropic_version": "bedrock-2023-05-31",
+                "max_tokens": 1000,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": prompt_generation_request
+                    }
+                ],
+                "temperature": 0.7
+            }
+
+            response = self.bedrock_client.invoke_model(
+                modelId=self.text_model_id,
+                body=json.dumps(request_body)
+            )
+
+            response_body = json.loads(response['body'].read())
+            generated_prompts_text = response_body['content'][0]['text']
+
+            # Parse the JSON response
+            prompts_data = json.loads(generated_prompts_text)
+
+            context_prompts = [
+                prompts_data['prompt1'],
+                prompts_data['prompt2']
+            ]
+
+            logger.info(f"Generated context-aware prompts: {context_prompts}")
+            return context_prompts
+
+        except Exception as e:
+            logger.warning(f"Failed to generate context-aware prompts: {str(e)}")
+            # Fallback to intelligent generic prompts based on keywords
+            return self._create_fallback_prompts(text_content)
+
+    def _create_fallback_prompts(self, text_content):
+        """
+        Create intelligent fallback prompts based on keyword analysis
+
+        Args:
+            text_content (str): The article content to analyze
+
+        Returns:
+            list: Two fallback image prompts
+        """
+        # Convert to lowercase for keyword matching
+        content_lower = text_content.lower()
+
+        # Define topic-based prompt templates
+        topic_prompts = {
+            'ai': [
+                "Futuristic digital brain with neural network connections, glowing nodes and data streams, professional tech illustration with blue and purple gradients",
+                "Abstract representation of artificial intelligence with geometric patterns, circuit boards, and flowing data visualizations in corporate colors"
+            ],
+            'technology': [
+                "Modern technology workspace with connected devices, holographic displays, and digital interfaces, clean minimalist design",
+                "Innovation concept with gears, digital networks, and technological growth symbols in professional blue tones"
+            ],
+            'business': [
+                "Professional business meeting with diverse team, modern office setting, collaboration and growth symbols",
+                "Corporate success visualization with charts, graphs, and upward trends in sophisticated color palette"
+            ],
+            'finance': [
+                "Financial growth concept with rising charts, currency symbols, and investment graphics in gold and blue",
+                "Professional banking and finance illustration with secure transactions and economic indicators"
+            ],
+            'marketing': [
+                "Digital marketing concept with social media icons, engagement metrics, and brand connectivity illustrations",
+                "Modern advertising and communication visualization with target audience and campaign elements"
+            ],
+            'leadership': [
+                "Leadership and team management concept with organizational charts and collaborative elements",
+                "Professional development and mentoring visualization with growth arrows and people connections"
+            ],
+            'innovation': [
+                "Innovation and creativity concept with lightbulb, gears, and breakthrough visualization elements",
+                "Cutting-edge research and development illustration with scientific and technological advancement themes"
+            ]
+        }
+
+        # Check for keywords and select appropriate prompts (more specific matching)
+        detected_topics = []
+        for topic, prompts in topic_prompts.items():
+            # Use word boundaries to avoid false matches
+            import re
+            pattern = r'\b' + topic + r'\b'
+            if re.search(pattern, content_lower):
+                detected_topics.append((topic, prompts))
+
+        # Return prompts for the first detected topic
+        if detected_topics:
+            topic, prompts = detected_topics[0]
+            logger.info(f"Detected topic '{topic}' - using targeted prompts")
+            return prompts
+
+        # Default professional prompts if no specific topic detected
+        default_prompts = [
+            "Professional business concept illustration with modern design elements, corporate colors, and innovation symbols",
+            "Abstract professional graphic showing growth, success, and forward-thinking business strategy with geometric elements"
+        ]
+
+        logger.info("Using default professional prompts")
+        return default_prompts
+
     def generate_images(self, text_content, num_images=2):
         """
-        Generate images using Nova Canvas and Titan Image Generator G1 v2
+        Generate context-aware images using Nova Canvas and Titan Image Generator G1 v2
 
         Args:
             text_content (str): Text to base images on (summary or rationale)
@@ -143,11 +280,8 @@ class AIGenerator:
         try:
             generated_images = []
 
-            # Create safe, generic prompts for variety (avoid content that might trigger filters)
-            prompts = [
-                "Professional business illustration with modern technology elements. Clean, corporate style with blue and white colors.",
-                "Abstract professional graphic showing innovation and growth. Minimalist business aesthetic with geometric shapes."
-            ]
+            # Generate dynamic, context-aware prompts based on the article content
+            prompts = self._create_context_aware_prompts(text_content)
 
             # Generate Image 1 with Nova Canvas
             if num_images >= 1:
