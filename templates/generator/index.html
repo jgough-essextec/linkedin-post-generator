@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+
+{% block title %}Generate LinkedIn Post - Link-to-LinkedIn{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h3 class="card-title mb-0">
+                    <i class="bi bi-link-45deg"></i>
+                    Generate LinkedIn Post from Article
+                </h3>
+            </div>
+            <div class="card-body">
+                <p class="lead">
+                    Transform any article into a professional LinkedIn post with AI-generated insights and images.
+                </p>
+
+                <form method="post" action="{% url 'generator:generate' %}" onsubmit="showLoading()">
+                    {% csrf_token %}
+
+                    <!-- URL Input -->
+                    <div class="mb-4">
+                        <label for="source_url" class="form-label">
+                            <strong>Article URL</strong>
+                        </label>
+                        <input
+                            type="url"
+                            class="form-control form-control-lg"
+                            id="source_url"
+                            name="source_url"
+                            placeholder="https://example.com/article"
+                            required
+                        >
+                        <div class="form-text">
+                            Enter the URL of the article you want to convert into a LinkedIn post.
+                        </div>
+                    </div>
+
+                    <!-- Prompt Adjustment -->
+                    <div class="mb-4">
+                        <label for="user_prompt_adjustment" class="form-label">
+                            <strong>Customize Your Post Style (Optional)</strong>
+                        </label>
+                        <textarea
+                            class="form-control"
+                            id="user_prompt_adjustment"
+                            name="user_prompt_adjustment"
+                            rows="6"
+                            placeholder="Add any specific instructions for how you want your LinkedIn post to be written..."
+                        >{{ default_prompt }}</textarea>
+                        <div class="form-text">
+                            Modify the instructions above to customize how your LinkedIn post is generated.
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-magic"></i>
+                            Generate LinkedIn Post
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- How it works -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h4 class="mb-0">How It Works</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 text-center mb-3">
+                        <div class="display-6 text-primary mb-2">1</div>
+                        <h6>Scrape Content</h6>
+                        <p class="small text-muted">We extract the main content from your article URL</p>
+                    </div>
+                    <div class="col-md-3 text-center mb-3">
+                        <div class="display-6 text-primary mb-2">2</div>
+                        <h6>AI Analysis</h6>
+                        <p class="small text-muted">Claude analyzes the content and creates professional insights</p>
+                    </div>
+                    <div class="col-md-3 text-center mb-3">
+                        <div class="display-6 text-primary mb-2">3</div>
+                        <h6>Generate Images</h6>
+                        <p class="small text-muted">AI creates relevant professional images for your post</p>
+                    </div>
+                    <div class="col-md-3 text-center mb-3">
+                        <div class="display-6 text-primary mb-2">4</div>
+                        <h6>Ready to Share</h6>
+                        <p class="small text-muted">Get a complete LinkedIn post with images and markdown download</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Features -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h4 class="mb-0">Features</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                Professional LinkedIn post generation
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                AI-powered content summarization
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                Business rationale insights
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                Custom AI-generated images
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                Markdown export functionality
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                Optimized for engagement
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // URL validation
+    document.getElementById('source_url').addEventListener('input', function(e) {
+        const url = e.target.value;
+        if (url && !url.startsWith('http://') && !url.startsWith('https://')) {
+            e.target.setCustomValidity('Please enter a valid URL starting with http:// or https://');
+        } else {
+            e.target.setCustomValidity('');
+        }
+    });
+</script>
+{% endblock %}

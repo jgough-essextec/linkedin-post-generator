@@ -1,0 +1,332 @@
+{% extends 'base.html' %}
+
+{% block title %}Generated LinkedIn Post - Link-to-LinkedIn{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <!-- Header with actions -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="mb-1">Generated LinkedIn Post</h2>
+                <p class="text-muted mb-0">
+                    Created from: <a href="{{ post.source_url }}" target="_blank" class="text-decoration-none">{{ post.source_url|truncatechars:60 }}</a>
+                </p>
+            </div>
+            <div>
+                <a href="{% url 'generator:index' %}" class="btn btn-outline-primary me-2">
+                    <i class="bi bi-plus-circle"></i> Generate Another
+                </a>
+                <a href="{% url 'generator:download_markdown' post.id %}" class="btn btn-success">
+                    <i class="bi bi-download"></i> Download Markdown
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- LinkedIn Post -->
+    <div class="col-lg-8 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h4 class="card-title mb-0">
+                    <i class="bi bi-linkedin"></i> LinkedIn Post
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="linkedin-post-preview p-3 bg-light rounded">
+                    {{ post.linkedin_post|linebreaks }}
+                </div>
+
+                <!-- Copy button -->
+                <div class="mt-3 d-flex justify-content-between align-items-center">
+                    <small class="text-muted">{{ post.linkedin_post|length }} characters</small>
+                    <button
+                        class="btn btn-outline-primary btn-sm"
+                        onclick="copyToClipboard('linkedin-post-content')"
+                        id="copy-post-btn"
+                    >
+                        <i class="bi bi-clipboard"></i> Copy Post
+                    </button>
+                </div>
+
+                <!-- Hidden div for copying -->
+                <div id="linkedin-post-content" style="display: none;">{{ post.linkedin_post }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary and Rationale -->
+    <div class="col-lg-4 mb-4">
+        <!-- Summary -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-file-text"></i> Summary
+                </h5>
+            </div>
+            <div class="card-body">
+                {{ post.summary|linebreaks }}
+            </div>
+        </div>
+
+        <!-- Business Rationale -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-lightbulb"></i> Business Rationale
+                </h5>
+            </div>
+            <div class="card-body">
+                {{ post.business_rationale|linebreaks }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Generated Images -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="bi bi-image"></i> Generated Images
+                </h4>
+            </div>
+            <div class="card-body">
+                <!-- Progress indicator for async image processing -->
+                {% if post.images_processing %}
+                <div id="image-processing-indicator" class="text-center mb-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2 text-muted">🎨 Generating AI images... This may take up to 2 minutes.</p>
+                    <div class="progress mt-2" style="height: 6px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%"></div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Image display area -->
+                <div id="images-container" class="row" {% if post.images_processing %}style="display: none;"{% endif %}>
+                    {% if post.image_url_1 or post.image_url_2 %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="bi bi-image"></i> Generated Images
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% if post.image_url_1 %}
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <img src="{{ post.image_url_1 }}" class="card-img-top" alt="Generated Image 1" style="height: 300px; object-fit: cover;">
+                            <div class="card-body text-center">
+                                <a href="{{ post.image_url_1 }}" download class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-download"></i> Download Image 1
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if post.image_url_2 %}
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <img src="{{ post.image_url_2 }}" class="card-img-top" alt="Generated Image 2" style="height: 300px; object-fit: cover;">
+                            <div class="card-body text-center">
+                                <a href="{{ post.image_url_2 }}" download class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-download"></i> Download Image 2
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                    {% if not post.image_url_1 and not post.image_url_2 and not post.images_processing %}
+                    <div class="text-center text-muted">
+                        <i class="bi bi-exclamation-circle me-2"></i>
+                        No images were generated for this post.
+                    </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Original Content (Collapsible) -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <button
+                        class="btn btn-link text-decoration-none p-0"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#originalContent"
+                        aria-expanded="false"
+                    >
+                        <i class="bi bi-file-earmark-text me-2"></i>
+                        Original Article Content
+                        <i class="bi bi-chevron-down ms-2"></i>
+                    </button>
+                </h5>
+            </div>
+            <div class="collapse" id="originalContent">
+                <div class="card-body">
+                    <div class="bg-light p-3 rounded" style="max-height: 400px; overflow-y: auto;">
+                        {{ post.original_content|linebreaks }}
+                    </div>
+                    {% if post.user_prompt_adjustment %}
+                    <hr>
+                    <h6>Custom Instructions Used:</h6>
+                    <div class="bg-info bg-opacity-10 p-2 rounded">
+                        {{ post.user_prompt_adjustment|linebreaks }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Metadata -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card bg-light">
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <small class="text-muted d-block">Generated</small>
+                        <strong>{{ post.created_at|date:"M d, Y H:i" }}</strong>
+                    </div>
+                    <div class="col-md-3">
+                        <small class="text-muted d-block">Post ID</small>
+                        <strong>#{{ post.id }}</strong>
+                    </div>
+                    <div class="col-md-3">
+                        <small class="text-muted d-block">Word Count</small>
+                        <strong>{{ post.linkedin_post|wordcount }} words</strong>
+                    </div>
+                    <div class="col-md-3">
+                        <small class="text-muted d-block">Images</small>
+                        <strong>
+                            {% if post.image_url_1 and post.image_url_2 %}2{% elif post.image_url_1 or post.image_url_2 %}1{% else %}0{% endif %}
+                        </strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function copyToClipboard(elementId) {
+        const text = document.getElementById(elementId).textContent;
+
+        if (navigator.clipboard && window.isSecureContext) {
+            // Use modern clipboard API
+            navigator.clipboard.writeText(text).then(function() {
+                showCopySuccess();
+            }).catch(function(err) {
+                console.error('Failed to copy: ', err);
+                fallbackCopyTextToClipboard(text);
+            });
+        } else {
+            // Fallback for older browsers
+            fallbackCopyTextToClipboard(text);
+        }
+    }
+
+    function fallbackCopyTextToClipboard(text) {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        textArea.style.top = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+
+        try {
+            const successful = document.execCommand('copy');
+            if (successful) {
+                showCopySuccess();
+            }
+        } catch (err) {
+            console.error('Fallback: Oops, unable to copy', err);
+        }
+
+        document.body.removeChild(textArea);
+    }
+
+    function showCopySuccess() {
+        const btn = document.getElementById('copy-post-btn');
+        const originalHTML = btn.innerHTML;
+
+        btn.innerHTML = '<i class="bi bi-check-circle"></i> Copied!';
+        btn.classList.remove('btn-outline-primary');
+        btn.classList.add('btn-success');
+
+        setTimeout(function() {
+            btn.innerHTML = originalHTML;
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-outline-primary');
+        }, 2000);
+    }
+
+    // Image modal functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const images = document.querySelectorAll('.card-img-top');
+        images.forEach(function(img) {
+            img.addEventListener('click', function() {
+                window.open(this.src, '_blank');
+            });
+            img.style.cursor = 'pointer';
+            img.title = 'Click to view full size';
+        });
+
+        // Async image processing status check
+        {% if post.images_processing %}
+        checkImageStatus();
+        {% endif %}
+    });
+
+    // Function to check image processing status
+    function checkImageStatus() {
+        const postId = {{ post.id }};
+        const statusUrl = `/api/image-status/${postId}/`;
+
+        function pollStatus() {
+            fetch(statusUrl)
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.images_processing) {
+                        // Images are ready, reload the page to show them
+                        window.location.reload();
+                    } else {
+                        // Keep polling every 10 seconds
+                        setTimeout(pollStatus, 10000);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking image status:', error);
+                    // Retry in 15 seconds if there's an error
+                    setTimeout(pollStatus, 15000);
+                });
+        }
+
+        // Start polling after 15 seconds (give images time to start processing)
+        setTimeout(pollStatus, 15000);
+    }
+</script>
+{% endblock %}
